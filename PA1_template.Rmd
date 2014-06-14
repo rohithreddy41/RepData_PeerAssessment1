@@ -1,20 +1,156 @@
 # Reproducible Research: Peer Assessment 1
 
 
-## Loading and preprocessing the data
+Title
+========================================================
+
+This is an R Markdown document, that explains a sequence of steps taken in solving the questions in programming assignment 1 of reproducible research.Section name in bold letters followed by questions with numbers.
+
+# What is mean total number of steps taken per day?
+1. Make a histogram of the total number of steps taken each day
+```{r echo=TRUE}
+# load data
+activityData <- read.csv("/Users/hadoop/Desktop/CourseEraR/Reproducible\ Research/Week2/PeerAssesment1/activity.csv", colClasses=c("numeric","Date","numeric"))
+library(data.table)
+activityData <- data.table(activityData)
+#adding  new columns month and day to calculate total number of steps taken by day and month.
+activityData$Month <- month(activityData$date)
+activityData$date <- mday(activityData$date)
+activityData$Month <- as.factor(activityData$Month)
+#calculate sum of steps by day of month and month
+stepsPerDay <- activityData[,sum(steps), by="date,Month"]
+library(ggplot2)
+ggplot(stepsPerDay, aes(x=date,y=V1,fill=Month)) + geom_bar(stat="identity",position="dodge")+labs(x="day" , y="steps")
+```
+
+2. Calculate and report the mean and median total number of steps taken per day
+
+```{r echo=TRUE, fig.width=7, fig.height=6}
+#mean
+activityDataMeanStepsPerDay <- activityData[,mean(steps), by="date,Month"]$V1
+print(activityDataMeanStepsPerDay)
+#median
+activityDataMedianStepsPerDay <- activityData[,median(steps), by="date,Month"]$V1
+print(activityDataMedianStepsPerDay)
+```
+
+# What is the average daily activity pattern?
+
+1. Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+
+```{r echo=TRUE}
+activityData <- read.csv("/Users/hadoop/Desktop/CourseEraR/Reproducible\ Research/Week2/PeerAssesment1/activity.csv", colClasses=c("numeric","Date","numeric"))
+activityData$interval <- factor(activityData$interval, exclude = NULL)
+activityData <- data.table(activityData)
+activityData <- activityData[which(complete.cases(activityData)),]
+avgStepsPerInterval <- activityData[, mean(steps), by="interval"]
+#padding zeros on interval
+library(stringr)
+avgStepsPerInterval$interval <- str_pad(as.character(avgStepsPerInterval$interval), 4, side="left", pad="0")
+#convert interval to time in hours & minutes
+avgStepsPerInterval$interval <- as.POSIXct(avgStepsPerInterval$interval, format="%H%M")
+#plot
+plot(avgStepsPerInterval$interval,avgStepsPerInterval$V1, type="l", xlab="Interval in Hours", ylab="Steps averaged per interval across all days")
+```
+
+2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r echo=TRUE}
+avgStepsPerInterval[avgStepsPerInterval$V1 == max(avgStepsPerInterval$V1), ]
+```
+
+# Imputing missing values
+ 1. Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+ ```{r echo=TRUE}
+ activityData <- read.csv("/Users/hadoop/Desktop/CourseEraR/Reproducible\ Research/Week2/PeerAssesment1/activity.csv", colClasses=c("numeric","Date","numeric"))
+ nrow(activityData) - length(which(complete.cases(activityData)))
+ ```
+ 
+ 2. Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+ 
+ ```{r echo=TRUE}
+ #stratergy chosen: replacing all NA's with mean of 5 minute intervals across all days.
+activityData <- read.csv("/Users/hadoop/Desktop/CourseEraR/Reproducible\ Research/Week2/PeerAssesment1/activity.csv", colClasses=c("numeric","Date","numeric"))
+activityData$interval <- factor(activityData$interval, exclude = NULL)
+activityData <- data.table(activityData)
+Data <- activityData[which(complete.cases(activityData)),]
+avgStepsPerInterval <- Data[, mean(steps), by="interval"]
+
+#add new column MeanPerInterval which is  mean of 5 minute intervals across alldays .
+activityData$MeanPerInterval <- avgStepsPerInterval$V1
+#replace NA's with mean of 5 minute intervals across all days.
+activityData[which(!complete.cases(activityData)),]$steps <- activityData[which(!complete.cases(activityData)),]$MeanPerInterval
+ ```
+ 
+ 3. Create a new dataset that is equal to the original dataset but with the missing data filled in.
+ ```{r echo=TRUE}
+activityDataWithOutNA <- activityData
+print(activityDataWithOutNA)
+```
 
 
+4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
-## What is mean total number of steps taken per day?
+```{r echo=TRUE}
+# using the new data set without mising values
+activityDataWithOutNA <- data.table(activityDataWithOutNA)
+#adding  new columns month and day to calculate total number of steps taken by day and month.
+activityDataWithOutNA$Month <- month(activityDataWithOutNA$date)
+activityDataWithOutNA$date <- mday(activityDataWithOutNA$date)
+activityDataWithOutNA$Month <- as.factor(activityDataWithOutNA$Month)
+#calculate sum of steps by day of month and month
+stepsPerDay <- activityDataWithOutNA[,sum(steps), by="date,Month"]
+ggplot(stepsPerDay, aes(x=date,y=V1,fill=Month)) + geom_bar(stat="identity",position="dodge")+labs(x="day" , y="steps")
 
+```
 
+  Mean and Median of number of steps takens per day after removing NA's from activity dataset
+```{r echo=TRUE}
+#mean
+activityDataWithOutNAMean <- activityDataWithOutNA[,mean(steps), by="date,Month"]$V1
+print(activityDataWithOutNAMean)
+#median
+activityDataWithOutNAMedian <- activityDataWithOutNA[,median(steps), by="date,Month"]$V1
+print(activityDataWithOutNAMedian)
+```
 
-## What is the average daily activity pattern?
+ Impact of imputing missing values
+ Differences in mean with and without NA's in activity dataset
+ ```{r echo=TRUE}
+ print(activityDataMeanStepsPerDay)
+ print(activityDataWithOutNAMean)
+ ```
 
+# Are there differences in activity patterns between weekdays and weekends?
 
+1. Create a new factor variable in the dataset with two levels – “weekday” and “weekend” indicating whether a given date is a weekday or weekend day.
 
-## Imputing missing values
+```{r echo=TRUE}
+activityData <- read.csv("/Users/hadoop/Desktop/CourseEraR/Reproducible\ Research/Week2/PeerAssesment1/activity.csv", colClasses=c("numeric","Date","numeric"))
 
+activityData$PartOfWeek <- weekdays(activityData$date)
 
+#function to determine if a given day is weekday or weekend.
+isWeekend <- function(x){
+        if(x == "Saturday" | x == "Sunday"){
+                x = 'weekend' 
+        } else{
+            x = 'weekday'   
+        }     
+}
 
-## Are there differences in activity patterns between weekdays and weekends?
+activityData$PartOfWeek <- sapply(activityData$PartOfWeek, isWeekend)
+activityData$PartOfWeek <- as.factor(activityData$PartOfWeek)
+print(levels(activityData$PartOfWeek))
+```
+
+2. Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
+
+```{r echo=TRUE}
+activityData$interval <- factor(activityData$interval, exclude = NULL)
+activityData <- data.table(activityData)
+activityData <- activityData[which(complete.cases(activityData)),]
+avgStepsPerInterval <- activityData[, mean(steps), by="interval,PartOfWeek"]
+ggplot(avgStepsPerInterval, aes(x=interval,y=V1, group=PartOfWeek))+geom_line()+facet_grid(PartOfWeek ~ .)+scale_x_discrete(breaks=c(0,500,1000,1500,2000))+labs(y="Steps averaged per interval across all days")
+
+```
