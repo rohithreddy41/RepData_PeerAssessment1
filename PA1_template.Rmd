@@ -6,6 +6,9 @@ Title
 
 This is an R Markdown document, that explains a sequence of steps taken in solving the questions in programming assignment 1 of reproducible research.Section name in bold letters followed by questions with numbers.
 
+# Loading and preprocessing the data
+activityData <- read.csv("/Users/hadoop/Desktop/CourseEraR/Reproducible\ Research/Week2/PeerAssesment1/activity.csv", colClasses=c("numeric","Date","numeric"))
+
 # What is mean total number of steps taken per day?
 1. Make a histogram of the total number of steps taken each day
 ```{r echo=TRUE}
